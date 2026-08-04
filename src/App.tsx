@@ -27,9 +27,9 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const unmount = connectToSocket({ onCandle: setLastCandle });
+    const disconnect = connectToSocket({ onCandle: setLastCandle, onClose: () => console.log('WS disconnected') });
 
-    return unmount;
+    return disconnect;
   }, [])
   
 

@@ -3,12 +3,12 @@ import type { Candle } from "../api/binance.types";
 import { createChart, type IChartApi, type ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { getCssProperty } from "../utils/style";
 
-export default function Chart({ candles }: { candles: Candle[] }) {
+export default function Chart({ candles, lastCandle }: { candles: Candle[], lastCandle: Candle | null }) {
     const chartDiv = useRef<HTMLDivElement | null>(null);
     const chart = useRef<IChartApi | null>(null);
     const series = useRef<ISeriesApi<'Candlestick'> | null>(null);
-    
 
+    // create chart on mount
     useEffect(() => {
         if (chartDiv.current) {
             chart.current = createChart(chartDiv.current, {
@@ -67,9 +67,15 @@ export default function Chart({ candles }: { candles: Candle[] }) {
         })
     }, []);
 
+    // set initial data when candles change from parents (fetched)
     useEffect(() => {
         series.current?.setData(candles);
     }, [candles]);
+
+    // update last candle from websocket
+    useEffect(() => {
+        if (lastCandle) series.current?.update(lastCandle)
+    }, [lastCandle])
 
 
     return (

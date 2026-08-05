@@ -1,77 +1,88 @@
-# React + TypeScript + Vite
+# Realtime Crypto Monitor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A candlestick chart that merges historical data with a live WebSocket feed — pick a
+pair, watch the last candle update tick by tick, see trades scroll in as they happen.
 
-Currently, two official plugins are available:
+Live: [realtime-crypto-monitor.vercel.app](https://realtime-crypto-monitor.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This is a rewrite of an older project of mine, [Crypto-Graph](https://github.com/LuigiP2404/Crypto-Graph)
+([live](https://luigip2404.github.io/Crypto-Graph/)), which only ever pulled REST
+snapshots. The chart UI is carried over, but the data layer is new: Vite instead of
+Create React App, and a real WebSocket connection instead of polling.
 
-## React Compiler
+## How it fits together
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+On mount, the chart loads historical candles over REST (`/api/v3/uiKlines`), then
+opens a WebSocket for the same symbol and starts patching just the last candle as
+ticks come in — no re-fetch, no full redraw. When a candle's interval closes, the
+next one gets appended. A second, separate WebSocket stream feeds the live price
+ticker and the trade tape.
 
-Note: This will impact Vite dev & build performances.
+Both connections handle Binance's 24h disconnect and ping/pong heartbeat, with
+exponential backoff + jitter on reconnect. The trade tape throttles incoming
+trades per side (bid/ask) so a busy pair doesn't hammer the DOM with a render per
+tick.
 
-## Expanding the ESLint configuration
+Symbol search and the "24h high/low/rank" data come from CoinGecko, since Binance
+doesn't expose that kind of market metadata — everything price- and trade-related
+comes straight from Binance.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## APIs
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+**Binance** — price and chart data, no key required:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- `GET /api/v3/ticker/price` — full symbol list on load, filtered down to `*USDT`
+  pairs. Used to check which coins CoinGecko turns up are actually tradeable here.
+- `GET /api/v3/uiKlines` — historical OHLC candles for the selected symbol.
+- `wss://.../ws/<symbol>@kline_1m` — live updates for the in-progress candle.
+- `wss://.../ws/<symbol>@trade` — every individual trade, feeds the price ticker
+  and the trade tape.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**CoinGecko** — search and market metadata, needs `VITE_CRYPTO_API_KEY`:
 
+- `GET /api/v3/search?query=` — fuzzy name search as you type.
+- `GET /api/v3/coins/markets?ids=` — hydrates the matches with price, image, rank,
+  24h high/low for the dropdown.
+
+### How search works
+
+Typing debounces 500ms, then hits CoinGecko's `/search`. Those results get filtered
+down to whatever also exists as a `<SYMBOL>USDT` pair on Binance — CoinGecko knows
+about plenty of coins Binance doesn't list, so this keeps out anything you couldn't
+actually pull a chart for. The surviving ids go to `/coins/markets` to pull in
+price/image/rank for the dropdown rows. Picking one hands that whole CoinGecko
+object up to the chart view — its price/image/rank/24h-high-low are shown as static
+context (the hero header, the stat tiles), while every number that actually moves
+after that point comes from Binance's own REST + WebSocket.
+
+## Stack
+
+- Vite + React + TypeScript
+- [lightweight-charts](https://github.com/tradingview/lightweight-charts) for the candlestick chart
+- MUI, just for the autocomplete and toast alerts
+- Binance REST + WS for OHLC and live trades, CoinGecko for search/market data
+
+## Running it locally
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+You'll need a CoinGecko demo API key for search to work — copy `.env.example` to
+`.env` and set:
 
 ```
+VITE_CRYPTO_API_KEY=your_key_here
+```
+
+Other scripts:
+
+```bash
+npm run build       # typecheck + production build
+npm run typecheck   # tsc only
+npm run lint         # eslint
+```
+
+CI runs lint/typecheck/build on every PR into `main`; Vercel handles deploys on
+its own from the GitHub integration.

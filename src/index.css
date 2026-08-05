@@ -89,3 +89,15 @@ img {
 .hidden {
   visibility: hidden;
 }
+
+.bid {
+  color: var(--up);
+}
+
+.ask {
+  color: var(--down);
+}
+
+.text-center {
+  text-align: center;
+}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { fetchKlines } from "../api/binance";
-import type { Candle } from "../api/binance.types";
-import { connectToSocket } from "../api/binanceSocket";
+import type { Candle, Trade } from "../api/binance.types";
+import { connectToSocket, connectToSocketTrade } from "../api/binanceSocket";
 import { describeError } from "../utils/errorMessage";
 import Chart from "./Chart";
+import PriceTicker from "./PriceTicker/PriceTicker";
+import TradeTape from "./TradeTape/TradeTape";
 
 type Status = 'loading' | 'error' | 'success'
 
@@ -13,6 +15,7 @@ export default function SymbolChart({ symbol }: { symbol: string }) {
     const [status, setStatus] = useState<Status>('loading');
     const [candles, setCandles] = useState<Candle[]>([]);
     const [lastCandle, setLastCandle] = useState<Candle | null>(null);
+    const [trade, setTrade] = useState<Trade | null>(null);
     const [errorMsg, setErrorMsg] = useState<string>('');
 
     useEffect(() => {
@@ -35,18 +38,29 @@ export default function SymbolChart({ symbol }: { symbol: string }) {
     }, [symbol]);
 
     useEffect(() => {
-        return connectToSocket({
+        const disconnectKline = connectToSocket({
             symbol,
             onCandle: setLastCandle,
-            onClose: () => console.log('WS disconnected'),
+            onClose: () => console.log('WS disconnected - KLINE'),
         });
+        const disconnectTrading = connectToSocketTrade({
+            symbol,
+            onTrade: setTrade,
+            onClose: () => console.log('WS disconnected - TRADING'),
+        });
+        return(() => {
+            disconnectKline();
+            disconnectTrading();
+        })
     }, [symbol]);
 
     return (
         <>
             {status === 'loading' ? <p>Loading graph... </p> : null}
             {status === 'error' ? <p>{errorMsg}</p> : null}
+            <PriceTicker trade={trade} symbol={symbol} key={symbol} />
             <Chart candles={candles} lastCandle={lastCandle} />
+            <TradeTape trade={trade} symbol={symbol} />
         </>
     );
 }

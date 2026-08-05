@@ -3,7 +3,7 @@ import type { RawKline, Interval, Candle, SymbolsResponse } from './binance.type
 import type { UTCTimestamp } from "lightweight-charts";
 import { ApiError } from "./errors";
 
-export async function fetchKlines({symbol, interval = '1m', limit, signal}: { symbol: string, interval?: Interval, limit?: number, signal?: AbortSignal }): Promise<Candle[]> {
+export async function fetchKlines({symbol, interval, limit = 1000, signal}: { symbol: string, interval: Interval, limit?: number, signal?: AbortSignal }): Promise<Candle[]> {
     const url = new URL('/api/v3/uiKlines', baseUrl);
     url.searchParams.set('symbol', symbol);
     url.searchParams.set('interval', interval);

@@ -47,7 +47,8 @@ export default function Chart({ candles, lastCandle }: { candles: Candle[], last
                     borderColor: getCssProperty('--border')
                 },
                 timeScale: {
-                    borderColor: getCssProperty('--border')
+                    borderColor: getCssProperty('--border'),
+                    timeVisible: true
                 }
             });
             series.current = chart.current.addSeries(CandlestickSeries, {

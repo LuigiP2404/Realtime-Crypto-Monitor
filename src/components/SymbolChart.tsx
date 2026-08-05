@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchKlines } from "../api/binance";
-import type { Candle, Trade } from "../api/binance.types";
+import type { Candle, Interval, Trade } from "../api/binance.types";
 import { connectToSocket, connectToSocketTrade } from "../api/binanceSocket";
 import { describeError } from "../utils/errorMessage";
 import Chart from "./Chart";
@@ -10,23 +10,35 @@ import MarketRange from "./MarketRange/MarketRange";
 import './SymbolChart.css';
 import type { Crypto } from "../api/coingecko.types";
 import { formatPrice } from "../utils/format";
+import IntervalPicker from "./IntervalPicker/IntervalPicker";
 
 type Status = 'loading' | 'error' | 'success'
 
 // mounted with key={symbol}: a new symbol means a new instance, so there is no
 // previous state to clear and the initial values are already the right ones
+// but changing the timeInterval creates a new instance of the chart, and
+// a status reset is needed.
 export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
     const [status, setStatus] = useState<Status>('loading');
     const [candles, setCandles] = useState<Candle[]>([]);
     const [lastCandle, setLastCandle] = useState<Candle | null>(null);
     const [trade, setTrade] = useState<Trade | null>(null);
     const [errorMsg, setErrorMsg] = useState<string>('');
+    const [timeInterval, setTimeInterval] = useState<Interval>('1m');
     const symbol = (crypto?.symbol + 'USDT').toUpperCase() ?? '';
+
+    function handleChangeInterval(t: Interval) {
+        if (t === timeInterval) return;
+        setCandles([]);
+        setLastCandle(null);
+        setStatus('loading');
+        setTimeInterval(t)
+    }
 
     useEffect(() => {
         const controller = new AbortController();
         const signal = controller.signal;
-        fetchKlines({ symbol , signal })
+        fetchKlines({ symbol, signal, interval: timeInterval })
             .then((res) => {
                 if (signal.aborted) return;
                 setCandles(res);
@@ -40,24 +52,30 @@ export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
             })
 
         return (() => controller.abort());
-    }, [symbol]);
+    }, [symbol, timeInterval]);
 
     useEffect(() => {
         const disconnectKline = connectToSocket({
             symbol,
+            interval: timeInterval,
             onCandle: setLastCandle,
             onClose: () => console.log('WS disconnected - KLINE'),
         });
-        const disconnectTrading = connectToSocketTrade({
+        return(() => {
+            disconnectKline();
+        })
+    }, [symbol, timeInterval]);
+
+    useEffect(() => {
+         const disconnectTrading = connectToSocketTrade({
             symbol,
             onTrade: setTrade,
             onClose: () => console.log('WS disconnected - TRADING'),
         });
         return(() => {
-            disconnectKline();
             disconnectTrading();
         })
-    }, [symbol]);
+    }, [symbol])
 
     // marketMaker === true: a resting buy order was hit, so the aggressor sold
     const side = trade?.marketMaker ? 'sell' : 'buy';
@@ -95,9 +113,12 @@ export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
                         current={trade?.price ?? crypto.current_price}
                     />
                 ) : null}
+                <div className="intervalPicker-container">
+                    <IntervalPicker value={timeInterval} onChange={handleChangeInterval} />
+                </div>
                 {status === 'loading' ? <p className="symbolChart-status">Loading graph…</p> : null}
                 {status === 'error' ? <p className="symbolChart-status is-error">{errorMsg}</p> : null}
-                <Chart candles={candles} lastCandle={lastCandle} />
+                <Chart candles={candles} key={timeInterval} lastCandle={lastCandle} />
             </div>
             <TradeTape trade={trade} symbol={symbol} />
         </div>

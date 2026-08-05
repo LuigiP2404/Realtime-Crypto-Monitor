@@ -1,0 +1,49 @@
+.intervalPicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.intervalPicker-option {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 5px 11px;
+    border-radius: calc(var(--radius-sm) - 4px);
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease;
+}
+
+.intervalPicker-option:hover:not(.is-active):not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--text);
+}
+
+.intervalPicker-option:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.intervalPicker-option.is-active {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.intervalPicker-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.intervalPicker-container {
+    display: flex;
+    justify-content: flex-end;
+}

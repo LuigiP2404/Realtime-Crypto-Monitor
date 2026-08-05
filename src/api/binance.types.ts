@@ -36,3 +36,8 @@ export interface Candle {
     low: number;
     close: number;
 }
+
+export interface SymbolsResponse {
+    symbol: string;
+    price: string;
+}

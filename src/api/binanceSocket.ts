@@ -1,7 +1,7 @@
 import type { UTCTimestamp } from "lightweight-charts";
 import type { Candle, Interval, RawKlineSocket, SocketMessage } from "./binance.types";
 
-export function connectToSocket({ symbol = 'BNBUSDT', interval = '1m', onCandle, onError, onClose }: { symbol?: string, interval?: Interval, onCandle: (candle :Candle) => void, onError?: () => void, onClose?: () => void}): () => void {
+export function connectToSocket({ symbol, interval = '1m', onCandle, onError, onClose }: { symbol: string, interval?: Interval, onCandle: (candle :Candle) => void, onError?: () => void, onClose?: () => void}): () => void {
     let socket: WebSocket | null = null;
     let retryCount: number = 0;
     let retry: ReturnType<typeof setTimeout> | undefined = undefined;

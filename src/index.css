@@ -85,3 +85,7 @@ img {
   background: rgba(255, 255, 255, 0.26);
   background-clip: content-box;
 }
+
+.hidden {
+  visibility: hidden;
+}

@@ -1,0 +1,12 @@
+.appToast {
+    max-width: min(380px, calc(100vw - 32px));
+}
+
+.appToast .MuiAlert-root {
+    width: 100%;
+}
+
+.appToast .MuiAlert-message {
+    font-size: 0.85rem;
+    line-height: 1.45;
+}

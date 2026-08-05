@@ -1,44 +1,40 @@
 import { useEffect, useState } from "react"
-import { fetchKlines } from "./api/binance";
-import Chart from "./components/Chart";
-import type { Candle } from "./api/binance.types";
-import { connectToSocket } from "./api/binanceSocket";
+import { fetchSymbols } from "./api/binance";
+import Asynchronous from "./components/Autocomplete/Autocomplete";
+import SymbolChart from "./components/SymbolChart";
+import { useAlert } from './hooks/useAlert';
+import { describeError } from './utils/errorMessage';
 
 function App() {
-  const [candles, setCandles] = useState<Candle[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [lastCandle, setLastCandle] = useState<Candle | null>(null)
-  
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetchKlines()
-    .then((res) => {
-      setCandles(res);
-    })
-    .catch((err: Error) => {
-      console.error('Failed to fetch ', err);
-      setError(err)
-    })
-    .finally(() =>{
-      setLoading(false);
-    })
-  }, []);
+  const [symbolsList, setSymbolsList] = useState<Set<string>>();
+  const [symbol, setSymbol] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string>('');
+  const { showAlert } = useAlert();
 
   useEffect(() => {
-    const disconnect = connectToSocket({ onCandle: setLastCandle, onClose: () => console.log('WS disconnected') });
-
-    return disconnect;
-  }, [])
-  
+    const controller: AbortController = new AbortController()
+    fetchSymbols(controller.signal)
+      .then((res) => {
+        setSymbolsList(res);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        console.error('Failed to fetch ', err);
+        const dErr = describeError(err, 'symbols list')
+        showAlert(dErr, 'error');
+        setErrorMsg(dErr);
+      })
+    return (() => controller.abort())
+  }, [showAlert]);
 
   return (
-    <>
-      {loading ? <p>Loading...</p> : null}
-      {error ? <p>{ error.message }</p> : null}
-      <Chart candles={candles} lastCandle={lastCandle} />
-    </>
+      <>
+        <Asynchronous onSelectCrypto={setSymbol} symbolsList={symbolsList} />
+        {errorMsg ? <p>{errorMsg}</p> : null}
+        {symbol
+          ? <SymbolChart key={symbol} symbol={symbol} />
+          : <p>Search for a crypto to see the graph</p>}
+      </>
   )
 }
 

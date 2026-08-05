@@ -80,7 +80,7 @@ export default function Chart({ candles, lastCandle }: { candles: Candle[], last
 
     return (
         <>
-            <div ref={chartDiv} style={{ height: '500px' }}></div>
+            <div className={candles.length ? '' : 'hidden'} ref={chartDiv} style={{ height: '500px' }}></div>
         </>
     );
 }

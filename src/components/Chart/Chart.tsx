@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import type { Candle } from "../api/binance.types";
+import type { Candle } from "../../api/binance.types";
 import { createChart, type IChartApi, type ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
-import { getCssProperty } from "../utils/style";
+import { getCssProperty } from "../../utils/style";
 import './Chart.css';
 
 export default function Chart({ candles, lastCandle }: { candles: Candle[], lastCandle: Candle | null }) {

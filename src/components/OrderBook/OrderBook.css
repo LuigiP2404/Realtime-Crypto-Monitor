@@ -1,0 +1,296 @@
+.orderBook {
+    max-width: 800px;
+    min-width: 320px;
+    margin: auto 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+}
+
+.orderBook-title {
+    padding: 12px 14px 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text);
+}
+
+/* bid/ask imbalance over the visible levels */
+.orderBook-imbalance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px 12px;
+}
+
+.orderBook-imbalanceLabel {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.orderBook-imbalanceLabel.is-bid {
+    color: var(--up);
+}
+
+.orderBook-imbalanceLabel.is-ask {
+    color: var(--down);
+}
+
+.orderBook-imbalanceBar {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 4px;
+    border-radius: 99px;
+    overflow: hidden;
+    background: var(--border);
+}
+
+.orderBook-imbalanceBar > span {
+    flex-shrink: 0;
+    transition: width 0.24s ease;
+}
+
+.orderBook-imbalanceBar > .is-bid {
+    background: var(--up);
+}
+
+.orderBook-imbalanceBar > .is-ask {
+    background: var(--down);
+}
+
+.orderBook-head,
+.orderBook-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr;
+    gap: 8px;
+    padding: 2px 14px;
+}
+
+.orderBook-head {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.orderBook-head span:not(:first-child),
+.orderBook-row span:not(:first-child) {
+    text-align: right;
+}
+
+.orderBook-side {
+    padding: 6px 0;
+}
+
+/* only rendered in the side-by-side layout, see the 1024px breakpoint */
+.orderBook-sideHead {
+    display: none;
+}
+
+.orderBook-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.orderBook-row {
+    position: relative;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.orderBook-row:hover {
+    background: var(--surface-hover);
+}
+
+/* depth bar: anchored right so the bars of both sides grow towards the same
+   edge and stay comparable at a glance */
+.orderBook-depth {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+    transition: width 0.18s ease;
+}
+
+.is-bid .orderBook-depth {
+    background: rgba(46, 230, 168, 0.14);
+}
+
+.is-ask .orderBook-depth {
+    background: rgba(255, 90, 114, 0.14);
+}
+
+/* keep the figures above the bar */
+.orderBook-row > span:not(.orderBook-depth) {
+    position: relative;
+    z-index: 1;
+}
+
+
+.is-bid .orderBook-price {
+    color: var(--up);
+}
+
+.is-ask .orderBook-price {
+    color: var(--down);
+}
+
+.orderBook-side .is-ask span.orderBook-price,
+.orderBook-side .is-bid span.orderBook-price {
+    text-align: left;
+}
+
+.orderBook-spread {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.022);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.orderBook-last {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.orderBook-trade-container {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    animation: orderBook-flash 420ms ease-out;
+}
+
+@keyframes orderBook-flash {
+    from {
+        opacity: 0.3;
+        transform: translateY(-2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.orderBook-arrow {
+    font-size: 0.55em;
+    opacity: 0.85;
+}
+
+.orderBook-last.is-buy {
+    color: var(--up);
+}
+
+.orderBook-last.is-sell {
+    color: var(--down);
+}
+
+.orderBook-spreadValue {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+}
+
+/* skeleton rows shown before the first message: no depth bar, no side colour */
+.orderBook-row.is-placeholder {
+    color: var(--text-faint);
+    opacity: 0.45;
+}
+
+.orderBook-row.is-placeholder:hover {
+    background: none;
+}
+
+/* ---------- Side-by-side layout (tablet only) ----------
+   Below 1024px .symbolChart stacks its columns, so the book gets the full page
+   width and only ~40 rows of height to fill it. Bids and asks move next to each
+   other: half the height, and the width finally gets used.
+   Under 768px there is no longer enough width for two number columns per side,
+   so the book goes back to the stacked layout. */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .orderBook {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "title     title"
+            "imbalance imbalance"
+            "spread    spread"
+            "bids      asks";
+        width: 100%;
+        max-width: none;
+    }
+
+    .orderBook-title { grid-area: title; }
+    .orderBook-imbalance { grid-area: imbalance; }
+    .orderBook-spread { grid-area: spread; }
+    .orderBook-side.is-bids { grid-area: bids; }
+    .orderBook-side.is-asks { grid-area: asks; }
+
+    /* the shared header sits over one set of columns; now there are two */
+    .orderBook-head {
+        display: none;
+    }
+
+    .orderBook-sideHead {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr 1fr;
+        gap: 8px;
+        padding: 0 14px 6px;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-faint);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .orderBook-sideHead span:not(:first-child) {
+        text-align: right;
+    }
+
+    /* the JSX hands the asks worst-price-first, which is what the stacked layout
+       needs to meet the bids at the spread. Side by side there is no meeting
+       point, so both columns must read best-price-first. */
+    .is-asks .orderBook-rows {
+        flex-direction: column-reverse;
+    }
+
+    .orderBook-side.is-asks {
+        border-left: 1px solid var(--border);
+    }
+
+    .orderBook-spread {
+        border-top: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .orderBook {
+        width: 100%;
+        order: 2;
+    }
+}
+
+@media (max-width: 640px) {
+    .orderBook-head,
+    .orderBook-row {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}

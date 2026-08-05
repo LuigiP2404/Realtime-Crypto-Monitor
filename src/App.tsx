@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { fetchSymbols } from "./api/binance";
-import SymbolChart from "./components/SymbolChart";
+import SymbolChart from "./components/SymbolChart/SymbolChart";
 import Header from "./components/Header/Header";
 import { useAlert } from './hooks/useAlert';
 import { describeError } from './utils/errorMessage';

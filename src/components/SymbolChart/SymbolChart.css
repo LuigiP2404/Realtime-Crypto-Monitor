@@ -155,6 +155,12 @@
     }
 }
 
+@media (max-width: 767px) {
+    .symbolChart-card {
+        order: 1;
+    }
+}
+
 @media all and (max-width: 640px) {
     .symbolChart {
         gap: 12px;

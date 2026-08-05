@@ -61,3 +61,22 @@ export interface SymbolsResponse {
     symbol: string;
     price: string;
 }
+
+export type RawBookOrder = [string, string];
+
+export interface RawBookOrderSocket {
+    lastUpdateId: number;
+    bids: RawBookOrder[];
+    asks: RawBookOrder[];
+}
+
+export type BookOrder = {
+    lastUpdateId: number;
+    bids: OrderBookLevel[],
+    asks: OrderBookLevel[]
+}
+
+export interface OrderBookLevel {
+    price: number;
+    quantity: number;
+}

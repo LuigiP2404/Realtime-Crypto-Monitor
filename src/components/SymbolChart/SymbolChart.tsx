@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import { fetchKlines } from "../api/binance";
-import type { Candle, Interval, Trade } from "../api/binance.types";
-import { connectToSocket, connectToSocketTrade } from "../api/binanceSocket";
-import { describeError } from "../utils/errorMessage";
-import Chart from "./Chart";
-import TradeTape from "./TradeTape/TradeTape";
-import MarketStats from "./MarketStats/MarketStats";
-import MarketRange from "./MarketRange/MarketRange";
+import { fetchKlines } from "../../api/binance";
+import { type Candle, type Interval, type Trade, type BookOrder } from "../../api/binance.types";
+import { connectToSocketBookOrder, connectToSocketKline, connectToSocketTrade } from "../../api/binanceSocket";
+import { describeError } from "../../utils/errorMessage";
+import Chart from "../Chart/Chart";
+import TradeTape from "../TradeTape/TradeTape";
+import MarketStats from "../MarketStats/MarketStats";
+import MarketRange from "../MarketRange/MarketRange";
 import './SymbolChart.css';
-import type { Crypto } from "../api/coingecko.types";
-import { formatPrice } from "../utils/format";
-import IntervalPicker from "./IntervalPicker/IntervalPicker";
+import type { Crypto } from "../../api/coingecko.types";
+import { formatPrice } from "../../utils/format";
+import IntervalPicker from "../IntervalPicker/IntervalPicker";
+import OrderBook from "../OrderBook/OrderBook";
 
 type Status = 'loading' | 'error' | 'success'
 
@@ -25,6 +26,7 @@ export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
     const [trade, setTrade] = useState<Trade | null>(null);
     const [errorMsg, setErrorMsg] = useState<string>('');
     const [timeInterval, setTimeInterval] = useState<Interval>('1m');
+    const [bookOrder, setBookOrder] = useState<BookOrder>()
     const symbol = (crypto?.symbol + 'USDT').toUpperCase() ?? '';
 
     function handleChangeInterval(t: Interval) {
@@ -55,7 +57,7 @@ export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
     }, [symbol, timeInterval]);
 
     useEffect(() => {
-        const disconnectKline = connectToSocket({
+        const disconnectKline = connectToSocketKline({
             symbol,
             interval: timeInterval,
             onCandle: setLastCandle,
@@ -67,13 +69,19 @@ export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
     }, [symbol, timeInterval]);
 
     useEffect(() => {
-         const disconnectTrading = connectToSocketTrade({
+        const disconnectTrading = connectToSocketTrade({
             symbol,
             onTrade: setTrade,
             onClose: () => console.log('WS disconnected - TRADING'),
         });
+        const disconnectBookOrder = connectToSocketBookOrder({
+            symbol,
+            onBook: setBookOrder,
+            onClose: () => console.log('WS disconnected - BOOKORDER')
+        })
         return(() => {
             disconnectTrading();
+            disconnectBookOrder();
         })
     }, [symbol])
 
@@ -82,6 +90,7 @@ export default function SymbolChart({ crypto }: { crypto: Crypto | null }) {
 
     return (
         <div className="symbolChart">
+            <OrderBook symbol={symbol} bids={bookOrder?.bids ?? []} asks={bookOrder?.asks ?? []} lastPrice={trade?.price} lastSide={side} />
             <div className="symbolChart-card">
                 <div className="symbolChart-hero">
                     <div className="symbolChart-identity">

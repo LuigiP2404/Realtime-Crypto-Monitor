@@ -1,0 +1,50 @@
+.marketStats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.marketStats-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 13px 16px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+    flex: 1;
+    min-width: 180px;
+    max-width: 250px;
+}
+
+.marketStats-tile:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+}
+
+.marketStats-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+.marketStats-value {
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+.marketStats-value.is-up {
+    color: var(--up);
+}
+
+.marketStats-value.is-down {
+    color: var(--down);
+}
+

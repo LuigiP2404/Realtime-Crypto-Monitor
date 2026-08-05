@@ -1,0 +1,65 @@
+.marketRange {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.marketRange-edge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-faint);
+    white-space: nowrap;
+}
+
+.marketRange-track {
+    position: relative;
+    flex: 1;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.marketRange-trackFill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--down), var(--accent), var(--up));
+    transition: width 0.4s ease;
+}
+
+.marketRange-thumb {
+    position: absolute;
+    top: 50%;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #fff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 3px rgba(6, 8, 15, 0.85), 0 0 14px rgba(255, 255, 255, 0.5);
+    transition: left 0.4s ease;
+}
+
+.marketRange-overflow {
+    position: absolute;
+    top: -15px;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    line-height: 1;
+    transition: left 0.4s ease;
+}
+
+.marketRange-overflow.is-up {
+    color: var(--up);
+}
+
+.marketRange-overflow.is-down {
+    top: auto;
+    bottom: -15px;
+    color: var(--down);
+}

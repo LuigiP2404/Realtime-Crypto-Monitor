@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Candle } from "../api/binance.types";
 import { createChart, type IChartApi, type ISeriesApi, CandlestickSeries, ColorType, CrosshairMode } from 'lightweight-charts';
 import { getCssProperty } from "../utils/style";
+import './Chart.css';
 
 export default function Chart({ candles, lastCandle }: { candles: Candle[], lastCandle: Candle | null }) {
     const chartDiv = useRef<HTMLDivElement | null>(null);
@@ -80,7 +81,7 @@ export default function Chart({ candles, lastCandle }: { candles: Candle[], last
 
     return (
         <>
-            <div className={candles.length ? '' : 'hidden'} ref={chartDiv} style={{ height: '500px' }}></div>
+            <div className={`chart ${candles.length ? '' : 'hidden'}`} ref={chartDiv}></div>
         </>
     );
 }

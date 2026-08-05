@@ -1,10 +1,19 @@
 .tradeTape {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 18px;
     max-width: 800px;
+    min-width: 320px;
     margin: 18px auto 0;
     font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1024px) {
+    .tradeTape {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 640px) {

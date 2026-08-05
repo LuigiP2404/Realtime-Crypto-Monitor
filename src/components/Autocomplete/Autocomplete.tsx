@@ -24,7 +24,7 @@ const SearchIcon = () => (
 );
 
 interface AsynchronousProps {
-    onSelectCrypto: (symbol: string) => void;
+    onSelectCrypto: (crypto: Crypto | null) => void;
     symbolsList: Set<string> | undefined;
 }
 const Asynchronous: React.FC<AsynchronousProps> = ({ onSelectCrypto, symbolsList }) => {
@@ -108,11 +108,7 @@ const Asynchronous: React.FC<AsynchronousProps> = ({ onSelectCrypto, symbolsList
     }, [inputValue, symbolsList, showAlert]);
 
     useEffect(() => {
-        if (selectedOption) {
-            onSelectCrypto((selectedOption.symbol + 'USDT').toUpperCase());
-        } else {
-            onSelectCrypto('');
-        }
+        if (selectedOption) onSelectCrypto(selectedOption);
     }, [selectedOption, onSelectCrypto]);
 
     return (

@@ -35,7 +35,7 @@ export function connectToSocketKline({ symbol, interval, onCandle, onError, onCl
             if (onClose) onClose()
             const delay = Math.min(1000 * (2**retryCount), 30000);
             const wait = delay / 2 + (Math.random() * delay / 2) // equal jitter as per aws doc
-            console.log('retry #' + retryCount + ' tra ' + Math.round(wait) + 'ms');
+            console.log('retry #' + retryCount + ' in ' + Math.round(wait) + 'ms');
             retryCount++;
             retry = setTimeout(openSocket, wait);
         }
@@ -89,7 +89,7 @@ export function connectToSocketTrade({ symbol, onTrade, onError, onClose }: { sy
             if (onClose) onClose()
             const delay = Math.min(1000 * (2**retryCount), 30000);
             const wait = delay / 2 + (Math.random() * delay / 2) // equal jitter as per aws doc
-            console.log('retry #' + retryCount + ' tra ' + Math.round(wait) + 'ms');
+            console.log('retry #' + retryCount + ' in ' + Math.round(wait) + 'ms');
             retryCount++;
             retry = setTimeout(openSocket, wait);
         }
@@ -142,7 +142,7 @@ export function connectToSocketBookOrder({ symbol, onBook, onError, onClose }: {
             if (onClose) onClose()
             const delay = Math.min(1000 * (2**retryCount), 30000);
             const wait = delay / 2 + (Math.random() * delay / 2) // equal jitter as per aws doc
-            console.log('retry #' + retryCount + ' tra ' + Math.round(wait) + 'ms');
+            console.log('retry #' + retryCount + ' in ' + Math.round(wait) + 'ms');
             retryCount++;
             retry = setTimeout(openSocket, wait);
         }

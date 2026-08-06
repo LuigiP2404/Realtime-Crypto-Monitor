@@ -26,7 +26,7 @@ export async function fetchKlines({symbol, interval, limit = 1000, signal}: { sy
     }
 }
 
-export async function fetchSymbols(signal: AbortSignal) {
+export async function fetchSymbols(signal?: AbortSignal) {
     const url = new URL('/api/v3/ticker/price', baseUrl);
     const res = await fetch(url, { signal });
     if (res.ok) {

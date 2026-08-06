@@ -41,5 +41,7 @@ export const formatPrice = (value?: number | null) => {
 
 export const formatPercent = (value?: number | null) => {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  // if the value is very close to 0, display 0.00% instead of +/- 0.00%
+  const normalizedValue = Number(value.toFixed(2));
+  return `${normalizedValue > 0 ? '+' : ''}${normalizedValue.toFixed(2)}%`;
 };

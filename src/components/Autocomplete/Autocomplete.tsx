@@ -16,6 +16,16 @@ const MAX_RESULTS = 10;
 
 const inputSkips:Set<AutocompleteInputChangeReason> = new Set(['selectOption', 'reset', 'blur'])
 
+// mirrors the rounding in formatPercent: a change that prints as 0.00% must not be
+// coloured as a move, otherwise the text and the colour contradict each other
+const toneFor = (change?: number | null) => {
+    if (change === null || change === undefined) return 'is-flat';
+    const rounded = Number(change.toFixed(2));
+    if (rounded > 0) return 'is-up';
+    if (rounded < 0) return 'is-down';
+    return 'is-flat';
+};
+
 const SearchIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <circle cx="11" cy="11" r="7" />
@@ -144,12 +154,7 @@ const Asynchronous: React.FC<AsynchronousProps> = ({ onSelectCrypto, symbolsList
             renderOption={(props, option) => {
                 const { key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & { key: React.Key };
                 const change = option.price_change_percentage_24h;
-                const changeClass =
-                    change === null || change === undefined
-                        ? 'is-flat'
-                        : change >= 0
-                            ? 'is-up'
-                            : 'is-down';
+                const changeClass = toneFor(change);
 
                 return (
                     <li key={key} {...optionProps}>

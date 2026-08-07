@@ -95,42 +95,36 @@ Ordine: 1 → 2 → 3 → 4 → 5.
 
 **Tecnica**: una classe fake assegnata a `globalThis.WebSocket` che registra le istanze
 create, con metodi per far scattare gli eventi a comando, + `vi.useFakeTimers()`.
-Firma minima:
-
-```ts
-class FakeWS { static instances: FakeWS[] = []; readyState = 0; close = vi.fn();
-  emit(data: unknown) { this.onmessage?.({ data: JSON.stringify(data) }); } }
-```
 
 Poi `vi.spyOn(Math, 'random')` per rendere deterministico il jitter.
 
 ### `connectToSocketKline` — `src/api/binanceSocket.ts`
 
-- [ ] URL sottoscritta: simbolo minuscolo + `@kline_<interval>` (passa `'BTCUSDT'` e `'4h'`)
-- [ ] Messaggio kline → `onCandle` col candle mappato (time in secondi, stringhe → number)
-- [ ] `onclose` → avanzando i timer viene creato un **nuovo** WebSocket
-- [ ] Backoff: asserisci la **proprietà** — il delay cresce fra un retry e il successivo e si
+- [x] URL sottoscritta: simbolo minuscolo + `@kline_<interval>` (passa `'BTCUSDT'` e `'4h'`)
+- [x] Messaggio kline → `onCandle` col candle mappato (time in secondi, stringhe → number)
+- [x] `onclose` → avanzando i timer viene creato un **nuovo** WebSocket
+- [x] Backoff: asserisci la **proprietà** — il delay cresce fra un retry e il successivo e si
       ferma a 30s. Non replicare la formula riga per riga: un test così si rompe a ogni
       modifica legittima
-- [ ] `retryCount` torna a 0 dopo un `onopen` riuscito (chiudi → riconnetti → apri → richiudi:
+- [x] `retryCount` torna a 0 dopo un `onopen` riuscito (chiudi → riconnetti → apri → richiudi:
       il delay deve essere di nuovo il minimo). È il test che dice se il reset è nel posto giusto
-- [ ] Watchdog: nessun messaggio per > 15s con `readyState === 1` → `close()` → riconnessione
-- [ ] Watchdog **non** chiude se i messaggi arrivano regolarmente (avanza 60s con un
+- [x] Watchdog: nessun messaggio per > 15s con `readyState === 1` → `close()` → riconnessione
+- [x] Watchdog **non** chiude se i messaggi arrivano regolarmente (avanza 60s con un
       messaggio ogni 5s)
-- [ ] Cleanup: dopo il teardown, avanzare i timer non crea nuovi socket **e** il watchdog è
+- [x] Cleanup: dopo il teardown, avanzare i timer non crea nuovi socket **e** il watchdog è
       fermo (avanza 60s → zero chiamate a `close`)
-- [ ] Cleanup mentre un retry è già schedulato → nessun socket creato dopo
-- [ ] Messaggio con JSON malformato → oggi l'handler lancia dentro l'event handler. Scrivi il
+- [x] Cleanup mentre un retry è già schedulato → nessun socket creato dopo
+- [x] Messaggio con JSON malformato → oggi l'handler lancia dentro l'event handler. Scrivi il
       test che descrive il comportamento **voluto**, poi decidi se adeguare il codice
 
 ### `connectToSocketTrade`
 
-- [ ] Topic `@trade` + mapping (`T` resta in ms, `m` → `marketMaker`, `p`/`q` → number)
-- [ ] Soglia watchdog 360s: a 20s di silenzio **non** deve chiudere
+- [x] Topic `@trade` + mapping (`T` resta in ms, `m` → `marketMaker`, `p`/`q` → number)
+- [x] Soglia watchdog 360s: a 20s di silenzio **non** deve chiudere
 
 ### `connectToSocketBookOrder`
 
-- [ ] Topic `@depth20` + mapping (`lastUpdateId` preservato, bids/asks → number)
+- [x] Topic `@depth20` + mapping (`lastUpdateId` preservato, bids/asks → number)
 
 > Le tre funzioni sono copia-incolla con 3 parametri diversi: backoff e cleanup li testi a
 > fondo **solo** sulla kline. Se ti secca non coprire le altre due allo stesso modo, è il test

@@ -1,44 +1,27 @@
 import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest'
 import { mockWebSocket } from '../test-utils/mockWebSocket';
-import { connectToSocketKline } from './binanceSocket';
-import type { Candle, Interval, SocketMessage } from './binance.types';
+import { connectToSocketBookOrder, connectToSocketKline, connectToSocketTrade } from './binanceSocket';
+import type { BookOrder, Candle, Interval, RawBookOrderSocket, RawTradeSocket, SocketMessage, Trade } from './binance.types';
 import type { UTCTimestamp } from 'lightweight-charts';
 
 type SocketConfig = {
     symbol: string,
-    interval: Interval,
-    onCandle: (candle: Candle) => void,
     onClose?: () => void,
     onError?: () => void
 }
 
-const dummyKlineRes: SocketMessage = {
-    e: 'kline', E: 1754485260000, s: 'BTCUSDT',
-    k: {
-        t: 1754485200000, T: 1754485499999, s: 'BTCUSDT', i: '4h',
-        f: 100, L: 200, o: '45466', c: '45765', h: '45864', l: '45300',
-        v: '12.5', n: 42, x: false, q: '570000', V: '6.2', Q: '280000', B: '0'
-    }
-};
-
-const expectedCandle: Candle = {
-    time: 1754485200 as UTCTimestamp,
-    open: 45466,
-    high: 45864,
-    low: 45300,
-    close: 45765
+interface SocketKlineConfig extends SocketConfig {
+    interval: Interval,
+    onCandle: (candle: Candle) => void
 }
 
-function initSocket(socketConfig: SocketConfig) {
-    const socket = mockWebSocket();
-    const disconnect = connectToSocketKline({ symbol: socketConfig.symbol, interval: socketConfig.interval, onCandle: socketConfig.onCandle, onError: socketConfig.onError, onClose: socketConfig.onClose });
-    const instances = socket.instances;
-    return { socket, disconnect, instances }
+interface SocketTradeConfig extends SocketConfig {
+    onTrade: (trade: Trade) => void
 }
 
-const FIRST_RETRY_MS = 500;
-const WATCHDOG_THRESHOLD = 15000;
-const WATCHDOG_RETRY = 5000;
+interface SocketDepthConfig extends SocketConfig {
+    onBook: (order: BookOrder) => void
+}
 
 beforeEach(() => {
     vi.useFakeTimers();
@@ -51,17 +34,46 @@ afterEach(() => {
     vi.restoreAllMocks();
 })
 
-describe('binanceSocket', () => {
+describe('klineSocket', () => {
+
+    const dummyKlineRes: SocketMessage = {
+        e: 'kline', E: 1754485260000, s: 'BTCUSDT',
+        k: {
+            t: 1754485200000, T: 1754485499999, s: 'BTCUSDT', i: '4h',
+            f: 100, L: 200, o: '45466', c: '45765', h: '45864', l: '45300',
+            v: '12.5', n: 42, x: false, q: '570000', V: '6.2', Q: '280000', B: '0'
+        }
+    };
+
+    const expectedCandle: Candle = {
+        time: 1754485200 as UTCTimestamp,
+        open: 45466,
+        high: 45864,
+        low: 45300,
+        close: 45765
+    }
+
+    function initSocketKline(socketConfig: SocketKlineConfig) {
+        const socket = mockWebSocket();
+        const disconnect = connectToSocketKline({ symbol: socketConfig.symbol, interval: socketConfig.interval, onCandle: socketConfig.onCandle, onError: socketConfig.onError, onClose: socketConfig.onClose });
+        const instances = socket.instances;
+        return { socket, disconnect, instances }
+    }
+
+    const FIRST_RETRY_MS = 500;
+    const WATCHDOG_THRESHOLD = 15000;
+    const WATCHDOG_RETRY = 5000;
+
     it('URL Check', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const s = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const s = initSocketKline(config);
         expect(s.socket.last().url).toBe('wss://stream.binance.com:9443/ws/btcusdt@kline_4h');
         s.disconnect();
     });
 
     it('check Kline message', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect } = initSocketKline(config);
         const ls = socket.last();
         ls.emitOpen();
         ls.emitMessage(dummyKlineRes);
@@ -71,8 +83,8 @@ describe('binanceSocket', () => {
     });
 
     it('check close and reconnect', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         const ls = socket.last();
         expect(instances.length).toBe(1);
         ls.emitClose();
@@ -85,8 +97,8 @@ describe('binanceSocket', () => {
     });
 
     it('check backoff', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         /*
             wait = delay / 2 + 0 (because spyOn returns 0 on Math.random)
             delay = Min(1000 * (2 ** retryCount), 30000) 
@@ -110,8 +122,8 @@ describe('binanceSocket', () => {
     })
 
     it('check retryCount to equal 0 after reconnecting', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         socket.last().emitClose();
         vi.advanceTimersByTime(FIRST_RETRY_MS);
         socket.last().emitOpen();
@@ -124,8 +136,8 @@ describe('binanceSocket', () => {
     });
 
     it('Watchdog close then reconnect', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         socket.last().emitOpen();
         vi.advanceTimersByTime(WATCHDOG_THRESHOLD); // socket still opened because its > not >=
         expect(instances.length).toBe(1);
@@ -137,8 +149,8 @@ describe('binanceSocket', () => {
     })
 
     it('watchdog does not close when messages are sent', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         socket.last().emitOpen();
         for (let i=0; i<12; i++) {
             vi.advanceTimersByTime(5000);
@@ -149,8 +161,8 @@ describe('binanceSocket', () => {
     })
 
     it('cleanup when a retry is not scheduled, should not create a new socket', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         const spy = vi.spyOn(socket.last(), 'close')
         socket.last().emitOpen();
         expect(instances.length).toBe(1);
@@ -164,8 +176,8 @@ describe('binanceSocket', () => {
     });
 
     it('cleanup when a retry is scheduled, should not create a new socket', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect, instances } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect, instances } = initSocketKline(config);
         socket.last().emitOpen();
         expect(instances.length).toBe(1);
         socket.last().emitClose();
@@ -179,12 +191,12 @@ describe('binanceSocket', () => {
     });
 
     it('malformed JSON in message', () => {
-        const config: SocketConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
-        const { socket, disconnect } = initSocket(config);
+        const config: SocketKlineConfig = { symbol: 'BTCUSDT', interval: '4h', onCandle: vi.fn() }
+        const { socket, disconnect } = initSocketKline(config);
         const ls = socket.last();
         const spy = vi.spyOn(socket.last(), 'close')
         ls.emitOpen();
-        vi.advanceTimersByTime(WATCHDOG_THRESHOLD); // right before watchdog closure
+        vi.advanceTimersByTime(WATCHDOG_THRESHOLD);
         const malformedJson = {
             e: 'kline', E: 1754485260000, s: 'BTCUSDT',
         };
@@ -197,4 +209,88 @@ describe('binanceSocket', () => {
         expect(config.onCandle).toHaveBeenCalledTimes(1);
         disconnect();
     })
+});
+
+describe('tradeSocket', () => {
+
+    function initSocketTrade(socketConfig: SocketTradeConfig) {
+        const socket = mockWebSocket();
+        const disconnect = connectToSocketTrade({ symbol: socketConfig.symbol, onTrade: socketConfig.onTrade, onError: socketConfig.onError, onClose: socketConfig.onClose });
+        const instances = socket.instances;
+        return { socket, disconnect, instances }
+    }
+
+    const dummyTradeRes: RawTradeSocket = {
+        e: 'trade', E: 1754485260123, s: 'BTCUSDT',
+        t: 987654, p: '45765', q: '0.0125',
+        T: 1754485260100, m: true, M: true
+    };
+
+    it('check URL and mapping', () => {
+        const config: SocketTradeConfig = { symbol: 'BTCUSDT', onTrade: vi.fn() }
+        const { socket, disconnect } = initSocketTrade(config);
+        const expectedTrade: Trade = {
+            time: 1754485260100 as UTCTimestamp,
+            price: 45765,
+            marketMaker: true,
+            quantity: 0.0125
+        }
+        socket.last().emitOpen();
+        expect(socket.last().url).toBe('wss://stream.binance.com:9443/ws/btcusdt@trade');
+        socket.last().emitMessage(dummyTradeRes)
+        expect(config.onTrade).toHaveBeenCalledWith(expectedTrade)
+        expect(config.onTrade).toHaveBeenCalledTimes(1)
+        disconnect();
+    });
+    
+    it('higher watchdog threshold, 25s silence should not close socket', () => {
+        const watchdogThreshold = 360000;
+        const watchdogRetry = 25000;
+        const config: SocketTradeConfig = { symbol: 'BTCUSDT', onTrade: vi.fn() }
+        const { socket, disconnect } = initSocketTrade(config);
+        socket.last().emitOpen();
+        const spy = vi.spyOn(socket.last(), 'close');
+        vi.advanceTimersByTime(watchdogRetry); // 1st watchdog's check
+        expect(spy).toHaveBeenCalledTimes(0);
+        // here diff equals watchdog threshold, so next check triggers close
+        vi.advanceTimersByTime(watchdogThreshold - watchdogRetry); 
+        expect(spy).toHaveBeenCalledTimes(0);
+        vi.advanceTimersByTime(watchdogRetry);
+        expect(spy).toHaveBeenCalledTimes(1);
+        disconnect();
+    });
+});
+
+describe('depthSocket', () => {
+
+    function initSocketBook(socketConfig: SocketDepthConfig) {
+        const socket = mockWebSocket();
+        const disconnect = connectToSocketBookOrder({ symbol: socketConfig.symbol, onBook: socketConfig.onBook, onError: socketConfig.onError, onClose: socketConfig.onClose });
+        const instances = socket.instances;
+        return { socket, disconnect, instances }
+    }
+
+    const dummyBookRes: RawBookOrderSocket = {
+        lastUpdateId: 7654321,
+        bids: [['45764.10', '0.5'], ['45763.50', '1.25'], ['45762.00', '0.03']],
+        asks: [['45765.90', '0.4'], ['45766.20', '2'], ['45767.00', '0.015']]
+    };
+
+    const expectedBookOrder: BookOrder = {
+        lastUpdateId: 7654321,
+        bids: [{ price: 45764.1, quantity: 0.5 }, { price: 45763.5, quantity: 1.25}, { price: 45762, quantity: 0.03}],
+        asks: [{ price: 45765.90, quantity: 0.4 }, { price: 45766.20, quantity: 2 }, { price: 45767, quantity: 0.015 }]
+    }
+
+    it('check URL and mapping', () => {
+        const config: SocketDepthConfig = { symbol: 'BTCUSDT', onBook: vi.fn() }
+        const { socket, disconnect } = initSocketBook(config);
+        socket.last().emitOpen();
+        expect(socket.last().url).toBe('wss://stream.binance.com:9443/ws/btcusdt@depth20');
+        socket.last().emitMessage(dummyBookRes);
+        
+        expect(config.onBook).toHaveBeenCalledWith(expectedBookOrder)
+        expect(config.onBook).toHaveBeenCalledTimes(1)
+        disconnect();
+    });
 });

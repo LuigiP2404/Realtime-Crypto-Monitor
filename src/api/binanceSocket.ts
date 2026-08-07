@@ -15,14 +15,16 @@ export function connectToSocketKline({ symbol, interval, onCandle, onError, onCl
         socket.onmessage = (e) => {
             const message = JSON.parse(e.data as string) as SocketMessage;
             const k: RawKlineSocket = message.k;
-            const candle: Candle = {
-                time: Math.floor(k.t / 1000) as UTCTimestamp,
-                open: Number(k.o),
-                high: Number(k.h),
-                low: Number(k.l),
-                close: Number(k.c)
-            }
-            onCandle(candle);
+            if (k) {
+                const candle: Candle = {
+                    time: Math.floor(k.t / 1000) as UTCTimestamp,
+                    open: Number(k.o),
+                    high: Number(k.h),
+                    low: Number(k.l),
+                    close: Number(k.c)
+                }
+                onCandle(candle);
+            };
             lastTimestamp = Date.now();
         }
         socket.onopen = () => {
